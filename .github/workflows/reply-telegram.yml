@@ -1,0 +1,46 @@
+name: reply-telegram
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  reply-cycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      XOPS_STATE_DIR: automation_state
+      X_USERNAME: ${{ secrets.X_USERNAME }}
+      TWITTER_API_IO_KEY: ${{ secrets.TWITTER_API_IO_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      CLAUDE_CODE_COMMAND: ${{ secrets.CLAUDE_CODE_COMMAND }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore state cache
+        uses: actions/cache@v4
+        with:
+          path: automation_state
+          key: reply-state-${{ github.ref_name }}
+          restore-keys: |
+            reply-state-
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip python-dotenv
+
+      - name: Run reply cycle
+        run: python scripts/github_reply_cycle.py
